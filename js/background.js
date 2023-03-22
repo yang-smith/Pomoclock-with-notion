@@ -5,6 +5,11 @@ var workgoing = 0;
 var restgoing = 0;
 var flag = 'stop';
 
+
+databaseId = '5bb52448afc448c29085e98a7de3b46d'
+
+var list = [];
+
 function startClock() {
     flag = 'work';
     //while(flag != 'break') {
@@ -16,7 +21,7 @@ function startClock() {
     });
     updateTime();
     //}
-    
+    notionSync(databaseId, token);
 }
 
 function sendMessageToContentScript(message, callback)
@@ -69,3 +74,30 @@ function updateTime() {
     if(flag != 'stop')
         setTimeout(updateTime, 1000);
 }
+
+async function notionSync(databaseId, token) {
+    const readUrl = "https://api.notion.com/v1/databases/" + databaseId + "/query";
+    try {
+      const response = await fetch(readUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+          'Notion-Version': '2022-06-28'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      console.log(data);
+      for (const result of data.results) {
+        //console.log(result);
+        console.log(result.properties.Name.title[0].plain_text);
+        list.push(result.properties.Name.title[0].plain_text);
+    }
+    } catch (error) {
+      console.error('Error handling response:', error);
+    }
+}
+

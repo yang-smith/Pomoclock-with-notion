@@ -15,6 +15,14 @@ $(function() {
     console.log(percent);
     $("#per").css('background-color','#ff8ba7');
     $("#per").css('height',percent+'%');
+
+    const arrayElement = document.getElementById('array');
+
+    bg.list.forEach(item => {
+    const newItem = document.createElement('p');
+    newItem.innerText = item;
+    arrayElement.appendChild(newItem);
+    });
 });
 
 $('#button').click(e => {
