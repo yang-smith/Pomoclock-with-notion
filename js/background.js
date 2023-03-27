@@ -93,8 +93,21 @@ async function notionSync(databaseId, token) {
       console.log(data);
       for (const result of data.results) {
         //console.log(result);
-        console.log(result.properties.Name.title[0].plain_text);
-        list.push(result.properties.Name.title[0].plain_text);
+        
+        
+        let numbs = result.properties.done.number;
+        let emoji = '';
+        if(result.properties.done.number != null) {
+            while(numbs>0) {
+                emoji += '\u{1F345}';
+                numbs--;
+            }
+                
+        }
+        var s = result.properties.Name.title[0].plain_text + ' ' + emoji;
+        //console.log(s);
+        list.push(s);
+
     }
     } catch (error) {
       console.error('Error handling response:', error);

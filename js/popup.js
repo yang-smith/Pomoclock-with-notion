@@ -21,6 +21,10 @@ $(function() {
     bg.list.forEach(item => {
     const newItem = document.createElement('p');
     newItem.innerText = item;
+    newItem.addEventListener('click', () => {
+        // 点击事件处理逻辑
+        console.log(`You clicked on item: ${item}`);
+    });
     arrayElement.appendChild(newItem);
     });
 });
