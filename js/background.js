@@ -3,16 +3,22 @@ var worktime = 5;
 var resttime = 5;
 var workgoing = 0;
 var restgoing = 0;
+var currentItemIndex = -1;
 var flag = 'stop';
 
 
-databaseId = '5bb52448afc448c29085e98a7de3b46d'
+
+token = '*********'
+databaseId = '*******'
 
 var list = [];
+var notionData = [];
+notionSync(databaseId, token);
 
-function startClock() {
+function startClock(index) {
     flag = 'work';
-    //while(flag != 'break') {
+    // Save the index of the clicked item
+    currentItemIndex = index;
     chrome.notifications.create("notifi", {
         type: 'basic',
         iconUrl: 'images/robot-with-flower.png',
@@ -20,8 +26,7 @@ function startClock() {
         message: 'you need rest!!'
     });
     updateTime();
-    //}
-    notionSync(databaseId, token);
+    
 }
 
 function sendMessageToContentScript(message, callback)
@@ -54,6 +59,7 @@ function updateTime() {
     if(restgoing > resttime) {
         restgoing = 0;
         flag = 'stop';
+        updateList(currentItemIndex);
     }
     switch (flag) {
         case 'work':
@@ -91,6 +97,7 @@ async function notionSync(databaseId, token) {
       }
       const data = await response.json();
       console.log(data);
+      notionData = data.results;
       for (const result of data.results) {
         //console.log(result);
         
@@ -107,10 +114,70 @@ async function notionSync(databaseId, token) {
         var s = result.properties.Name.title[0].plain_text + ' ' + emoji;
         //console.log(s);
         list.push(s);
-
     }
     } catch (error) {
       console.error('Error handling response:', error);
     }
 }
 
+async function updateList(index) {
+ 
+    currentItemIndex = index;
+    // 更新番茄数
+    if (currentItemIndex < 0 || currentItemIndex >= notionData.length) {
+        console.error('Invalid currentItemIndex:', currentItemIndex);
+        return;
+    }
+    console.log('notionData:', notionData);
+    console.log('currentItemIndex:', index);
+
+    const result = notionData[currentItemIndex];
+    console.log(result);
+    const pageId = result.id;
+    result.properties.done.number += 1;
+
+    // 更新数据库
+    await updateNotionDatabase(pageId, token, result);
+
+    // 重新获取任务列表
+    list = [];
+    await notionSync(databaseId, token);
+
+    // 通知popup更新任务列表
+    chrome.runtime.sendMessage({ type: "updateList" });
+}
+
+async function updateNotionDatabase(pageId, token, result) {
+    const updateUrl = `https://api.notion.com/v1/pages/${pageId}`;
+    const data = {
+        "properties": {
+            "Name": {
+                "title": result.properties.Name.title
+            },
+            "done": {
+                "number": result.properties.done.number
+            }
+        }
+    };
+
+    try {
+        const response = await fetch(updateUrl, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json',
+                'Notion-Version': '2022-06-28'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const updatedData = await response.json();
+        console.log('Updated data:', updatedData);
+    } catch (error) {
+        console.error('Error updating the database:', error);
+    }
+}

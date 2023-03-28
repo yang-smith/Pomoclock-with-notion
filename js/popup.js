@@ -1,50 +1,48 @@
 $(function() {
+    updatePopup();
+    renderPopup();
+});
+
+function updatePopup() {
     var settime = 25;
     var percent = 0;
     var bg = chrome.extension.getBackgroundPage();
-	if(bg.flag == 'work') {
+    if(bg.flag == 'work') {
         settime = bg.workgoing;
         percent = bg.workgoing*100/bg.worktime;
     }
-	else if(bg.flag == 'rest') {
+    else if(bg.flag == 'rest') {
         settime = bg.restgoing;
         percent = bg.restgoing*100/bg.resttime;
     }
-	var showtime = document.getElementById("show-time");
+    var showtime = document.getElementById("show-time");
     showtime.innerHTML = String(settime);
     console.log(percent);
     $("#per").css('background-color','#ff8ba7');
     $("#per").css('height',percent+'%');
+}
 
+setInterval(updatePopup, 1000); // 每隔1000毫秒（1秒）调用一次updatePopup函数
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === "updateList") {
+        renderPopup();
+    }
+});
+
+function renderPopup() {
     const arrayElement = document.getElementById('array');
+    arrayElement.innerHTML = ''; // 清空当前任务列表
 
-    bg.list.forEach(item => {
-    const newItem = document.createElement('p');
-    newItem.innerText = item;
-    newItem.addEventListener('click', () => {
-        // 点击事件处理逻辑
-        console.log(`You clicked on item: ${item}`);
-    });
-    arrayElement.appendChild(newItem);
-    });
-});
+    const bg = chrome.extension.getBackgroundPage();
 
-$('#button').click(e => {
-    var settime = 25;
-    var percent = 0;
-    var bg = chrome.extension.getBackgroundPage();
-    bg.startClock();
-	if(bg.flag == 'work') {
-        settime = bg.workgoing;
-        percent = bg.workgoing*100/bg.worktime;
-    }
-	else if(bg.flag == 'rest') {
-        settime = bg.restgoing;
-        percent = bg.restgoing*100/bg.resttime;
-    }
-	var showtime = document.getElementById("show-time");
-    showtime.innerHTML = String(settime);
-    console.log(percent);
-    $("#per").css('background-color','#ff8ba7');
-    $("#per").css('height',percent+'%');
-});
+    bg.list.forEach((item, index) => {
+        const newItem = document.createElement('p');
+        newItem.innerText = item;
+        newItem.addEventListener('click', () => {
+            bg.currentItemIndex = index;
+            bg.startClock(index);
+        });
+        arrayElement.appendChild(newItem);
+    });
+}
