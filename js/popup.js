@@ -46,3 +46,8 @@ function renderPopup() {
         arrayElement.appendChild(newItem);
     });
 }
+
+document.getElementById('clear-tomatoes').addEventListener('click', () => {
+    const bg = chrome.extension.getBackgroundPage();
+    bg.clearAllTomatoes();
+});

@@ -5,11 +5,10 @@ var workgoing = 0;
 var restgoing = 0;
 var currentItemIndex = -1;
 var flag = 'stop';
+var clickedGoingOn = false;
 
 
 
-token = '*********'
-databaseId = '*******'
 
 var list = [];
 var notionData = [];
@@ -47,14 +46,23 @@ function test() {
       });
 }
 
-function updateTime() {
-    if(workgoing > worktime) {
-        workgoing = 0;
-        sendMessageToContentScript({cmd:'test', value:'你好，我是popup！'}, function(response)
-        {
-            console.log('来自content的回复：'+response);
+async function updateTime() {
+    if (workgoing > worktime) {
+        sendMessageToContentScript({ cmd: 'test', value: '你好，我是popup！' }, function (response) {
+            console.log('来自content的回复：' + response);
         });
-        flag = 'rest';
+        // 检查用户是否已经点击了 goingon 按钮
+        while (!clickedGoingOn) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        if (clickedGoingOn) {
+            workgoing = 0;
+            flag = 'rest';
+            clickedGoingOn = false; // 重置 clickedGoingOn 变量
+        } else {
+            workgoing--;
+        }
     }
     if(restgoing > resttime) {
         restgoing = 0;
@@ -181,3 +189,28 @@ async function updateNotionDatabase(pageId, token, result) {
         console.error('Error updating the database:', error);
     }
 }
+
+
+async function clearAllTomatoes() {
+    for (let i = 0; i < notionData.length; i++) {
+        const result = notionData[i];
+        const pageId = result.id;
+        result.properties.done.number = 0;
+
+        // 更新数据库
+        await updateNotionDatabase(pageId, token, result);
+    }
+
+    // 重新获取任务列表
+    list = [];
+    await notionSync(databaseId, token);
+
+    // 通知popup更新任务列表
+    chrome.runtime.sendMessage({ type: "updateList" });
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'goingOnClicked') {
+        clickedGoingOn = true;
+    }
+});
