@@ -1,5 +1,5 @@
 //chrome-extension://khafeoajgbcjjcgnkkfakjhfjpjhgibn/background.html
-var worktime = 5;
+var worktime = 25;
 var resttime = 5;
 var workgoing = 0;
 var restgoing = 0;
@@ -86,7 +86,7 @@ async function updateTime() {
             break;
     }
     if(flag != 'stop')
-        setTimeout(updateTime, 1000);
+        setTimeout(updateTime, 1000*60);
 }
 
 async function notionSync(databaseId, token) {
